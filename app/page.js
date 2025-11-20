@@ -3,7 +3,8 @@ import prisma from "../lib/db";
 // ⭐ SERVER ACTIONS
 export const revalidate = 0;
 
-async function createUser(formData) {
+// CREATE
+export async function createUser(formData) {
   "use server";
   const name = formData.get("name");
   const email = formData.get("email");
@@ -13,8 +14,11 @@ async function createUser(formData) {
   });
 }
 
-async function deleteUser(id) {
+// DELETE — versión correcta para Server Actions
+export async function deleteUser(formData) {
   "use server";
+  const id = Number(formData.get("id"));
+
   await prisma.user.delete({
     where: { id }
   });
@@ -67,11 +71,14 @@ export default async function Home() {
                 <p className="text-sm text-zinc-500">{u.email}</p>
               </div>
 
-              <form action={async () => deleteUser(u.id)}>
+              {/* Delete form CORRECTO */}
+              <form action={deleteUser}>
+                <input type="hidden" name="id" value={u.id} />
                 <button className="text-red-600 hover:text-red-800">
                   Delete
                 </button>
               </form>
+
             </li>
           ))}
         </ul>
