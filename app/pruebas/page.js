@@ -1,4 +1,4 @@
-import prisma from "../lib/db";
+import prisma from "../../lib/db";
 
 // ⭐ SERVER ACTIONS
 export const revalidate = 0;

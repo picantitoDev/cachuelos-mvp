@@ -6,9 +6,199 @@ datasource db {
   provider = "postgresql"
 }
 
+////////////////////////////////////////////////////
+// ENUMS
+////////////////////////////////////////////////////
+
+enum UserRole {
+  CLIENT
+  STUDENT
+}
+
+enum University {
+  UPAO
+}
+
+enum TaskStatus {
+  PUBLICADA
+  EN_NEGOCIACION
+  EN_PROGRESO
+  COMPLETADA
+  CANCELADA
+}
+
+enum ApplicationStatus {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
+enum PaymentMethod {
+  TARJETA
+  YAPE
+  PLIN
+  TRANSFERENCIA
+}
+
+enum PaymentStatus {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+}
+
+////////////////////////////////////////////////////
+// USER
+////////////////////////////////////////////////////
+
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  age   Int
+  id            Int          @id @default(autoincrement())
+  name          String
+  email         String       @unique
+  password      String
+
+  phone         String?
+  role          UserRole
+  university    University?
+  verified      Boolean      @default(false)
+
+  bio           String?      @db.Text
+  skills        String[]
+  rating        Float?       @default(0)
+  ratingCount   Int          @default(0)
+  photoUrl      String?
+
+  // Relaciones
+  tasks         Task[]       @relation("ClientTasks")
+  assignedTasks Task[]       @relation("AssignedStudent")
+  applications  Application[]
+  messagesSent  Message[]    @relation("MessagesSent")
+  messagesRecv  Message[]    @relation("MessagesRecv")
+  reviewsGiven  Review[]     @relation("ReviewsGiven")
+  reviewsRecv   Review[]     @relation("ReviewsRecv")
+  paymentsMade  Payment[]    @relation("ClientPayments")
+  paymentsRecv  Payment[]    @relation("StudentPayments")
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+////////////////////////////////////////////////////
+// TASK
+////////////////////////////////////////////////////
+
+model Task {
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String         @db.Text
+  category      String
+  location      String
+  date          DateTime?
+  budgetMin     Float
+  budgetMax     Float
+  images        String[]
+
+  status        TaskStatus     @default(PUBLICADA)
+
+  clientId      Int
+  client        User           @relation("ClientTasks", fields: [clientId], references: [id])
+
+  assignedId    Int?
+  assignedTo    User?          @relation("AssignedStudent", fields: [assignedId], references: [id])
+
+  applications  Application[]
+  messages      Message[]
+  payment       Payment?
+  reviews       Review[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+////////////////////////////////////////////////////
+// APPLICATION
+////////////////////////////////////////////////////
+
+model Application {
+  id          Int                @id @default(autoincrement())
+  message     String?
+  status      ApplicationStatus  @default(PENDIENTE)
+
+  taskId      Int
+  studentId   Int
+
+  task        Task               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  student     User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime           @default(now())
+}
+
+////////////////////////////////////////////////////
+// MESSAGE
+////////////////////////////////////////////////////
+
+model Message {
+  id            Int          @id @default(autoincrement())
+  type          MessageType  @default(TEXT)
+  content       String       @db.Text
+
+  senderId      Int
+  receiverId    Int
+  taskId        Int
+
+  sender        User         @relation("MessagesSent", fields: [senderId], references: [id])
+  receiver      User         @relation("MessagesRecv", fields: [receiverId], references: [id])
+  task          Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime     @default(now())
+}
+
+////////////////////////////////////////////////////
+// PAYMENT
+////////////////////////////////////////////////////
+
+model Payment {
+  id             Int            @id @default(autoincrement())
+  method         PaymentMethod
+  status         PaymentStatus  @default(PENDIENTE)
+
+  priceFinal     Float
+  commission     Float
+  totalAmount    Float
+
+  taskId         Int     @unique
+  task           Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  clientId       Int
+  client         User    @relation("ClientPayments", fields: [clientId], references: [id])
+
+  studentId      Int
+  student        User    @relation("StudentPayments", fields: [studentId], references: [id])
+
+  createdAt      DateTime  @default(now())
+}
+
+////////////////////////////////////////////////////
+// REVIEW
+////////////////////////////////////////////////////
+
+model Review {
+  id          Int        @id @default(autoincrement())
+  rating      Int
+  comment     String?    @db.Text
+
+  taskId      Int
+  task        Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  authorId    Int
+  author      User       @relation("ReviewsGiven", fields: [authorId], references: [id])
+
+  targetId    Int
+  target      User       @relation("ReviewsRecv", fields: [targetId], references: [id])
+
+  createdAt   DateTime   @default(now())
 }
