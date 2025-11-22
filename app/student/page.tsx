@@ -2,75 +2,133 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Wallet, CalendarDays } from "lucide-react";
 
-export default function StudentExploreTasks() {
+import { Briefcase, Send, Rocket } from "lucide-react";
+
+export default function StudentDashboard() {
   const router = useRouter();
-  const [tasks, setTasks] = useState([]);
+
+  const [user, setUser] = useState<any>(null);
+  const [tasksAvailable, setTasksAvailable] = useState(0);
+  const [applicationsCount, setApplicationsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // -------------------------------
+  // 1. Cargar usuario
+  // -------------------------------
   useEffect(() => {
-    async function load() {
+    const u = localStorage.getItem("user");
+    if (!u) {
+      router.push("/login");
+      return;
+    }
+
+    const parsed = JSON.parse(u);
+
+    // Si no es estudiante → redirigir a su dashboard cliente
+    if (parsed.role !== "STUDENT") {
+      router.push("/dashboard");
+      return;
+    }
+
+    setUser(parsed);
+  }, [router]);
+
+  // -------------------------------
+  // 2. Cargar número de tareas publicadas
+  // -------------------------------
+  useEffect(() => {
+    if (!user) return;
+
+    async function loadStats() {
       try {
-        const res = await fetch("/api/public-tasks");
-        const data = await res.json();
-        setTasks(data);
+        // COUNT de tareas publicadas
+        const resTasks = await fetch(`/api/tasks?status=PUBLICADA`);
+        const tasksList = await resTasks.json();
+        setTasksAvailable(tasksList.length);
+
+        // COUNT de mis postulaciones
+        const resApps = await fetch(`/api/applications?studentId=${user.id}`);
+        const apps = await resApps.json();
+        setApplicationsCount(apps.length);
+
       } catch (error) {
-        console.error(error);
+        console.error("Error loading student stats:", error);
       }
+
       setLoading(false);
     }
 
-    load();
-  }, []);
+    loadStats();
+  }, [user]);
+
+  if (!user || loading)
+    return <p className="text-gray-600">Cargando...</p>;
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Explorar Tareas</h1>
+    <div className="space-y-10">
 
-      {/* filtros arriba... (no los toco) */}
+      {/* ENCABEZADO */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-extrabold text-gray-900">
+          Hola, {user.name}!
+        </h1>
 
-      {loading ? (
-        <p className="text-gray-500">Cargando...</p>
-      ) : tasks.length === 0 ? (
-        <p className="text-gray-500">No hay tareas disponibles en este momento.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="bg-white border rounded-lg p-5 shadow hover:shadow-md transition cursor-pointer"
-              onClick={() => router.push(`/student/tasks/${task.id}`)}
-            >
-              <h2 className="text-lg font-semibold text-gray-900">
-                {task.title}
-              </h2>
+        <button
+          onClick={() => router.push("/student/tasks")}
+          className="bg-indigo-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-indigo-700"
+        >
+          Explorar tareas
+        </button>
+      </div>
 
-              <p className="text-sm text-indigo-600 mt-1">{task.category}</p>
+      {/* ESTADÍSTICAS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-              <div className="mt-3 space-y-2 text-sm text-gray-600">
-                <p className="flex items-center gap-2">
-                  <MapPin size={16} /> {task.location}
-                </p>
-
-                <p className="flex items-center gap-2">
-                  <Wallet size={16} className="text-indigo-600" />
-                  Estimado: <span className="font-semibold">S/{task.budget}</span>
-                </p>
-
-                <p className="flex items-center gap-2">
-                  <CalendarDays size={16} />
-                  {new Date(task.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-
-              <button className="mt-4 text-indigo-600 hover:underline font-medium">
-                Ver detalles
-              </button>
+        {/* TAREAS DISPONIBLES */}
+        <div className="p-6 bg-white shadow rounded-xl border">
+          <div className="flex items-center gap-4">
+            <Briefcase className="text-indigo-600" size={36} />
+            <div>
+              <p className="text-sm text-gray-500">Tareas disponibles</p>
+              <p className="text-3xl font-bold">{tasksAvailable}</p>
             </div>
-          ))}
+          </div>
         </div>
-      )}
+
+        {/* MIS POSTULACIONES */}
+        <div className="p-6 bg-white shadow rounded-xl border">
+          <div className="flex items-center gap-4">
+            <Send className="text-green-600" size={36} />
+            <div>
+              <p className="text-sm text-gray-500">Mis postulaciones</p>
+              <p className="text-3xl font-bold">{applicationsCount}</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* CTA: COMENZAR */}
+      <div className="p-8 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between shadow-sm">
+        <div>
+          <h2 className="text-xl font-semibold text-indigo-900">
+            ¿Listo para encontrar tu próximo cachuelo?
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Explora cientos de tareas publicadas por clientes en tu ciudad.
+          </p>
+        </div>
+
+        <button
+          onClick={() => router.push("/student/tasks")}
+          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700"
+        >
+          <Rocket size={18} />
+          Ver tareas
+        </button>
+      </div>
+
     </div>
   );
 }
