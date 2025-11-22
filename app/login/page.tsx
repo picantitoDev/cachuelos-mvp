@@ -35,12 +35,21 @@ export default function LoginPage() {
       return;
     }
 
-    // Guardamos el usuario en localStorage
+    // 🚨 VALIDACIÓN DEL ROL ANTES DE PERMITIR INGRESAR
+    if (data.role !== role) {
+      alert(
+        `Esta cuenta es de tipo ${data.role === "CLIENT" ? "CLIENTE" : "ESTUDIANTE"
+        }. Cambia la pestaña arriba para iniciar sesión correctamente.`
+      );
+      return;
+    }
+
+    // Guardamos el usuario
     localStorage.setItem("user", JSON.stringify(data));
 
-    // Redirigimos según el rol
+    // Redirección correcta según el rol
     if (data.role === "CLIENT") router.push("/dashboard");
-    else router.push("/dashboard-student"); // mas adelante lo hacemos
+    else router.push("/student");
   };
 
   return (
