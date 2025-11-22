@@ -16,6 +16,7 @@ enum UserRole {
 }
 
 enum University {
+  NONE
   UPAO
 }
 
@@ -59,7 +60,7 @@ model User {
   id            Int          @id @default(autoincrement())
   name          String
   email         String       @unique
-  password      String
+  password      String       // <-- lo volvemos a agregar aquí
 
   phone         String?
   role          UserRole
@@ -72,7 +73,6 @@ model User {
   ratingCount   Int          @default(0)
   photoUrl      String?
 
-  // Relaciones
   tasks         Task[]       @relation("ClientTasks")
   assignedTasks Task[]       @relation("AssignedStudent")
   applications  Application[]
