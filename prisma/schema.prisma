@@ -97,13 +97,9 @@ model Task {
   description   String         @db.Text
   category      String
   location      String
-  date          DateTime?
-  budgetMin     Float
-  budgetMax     Float
-  images        String[]
-
+  budget        Float
+  scheduledAt   DateTime?      // opcional, se seteará después por el cliente
   status        TaskStatus     @default(PUBLICADA)
-
   clientId      Int
   client        User           @relation("ClientTasks", fields: [clientId], references: [id])
 
