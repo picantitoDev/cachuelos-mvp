@@ -14,18 +14,17 @@ export default function TaskDetailsPage() {
   const router = useRouter();
   const { id } = useParams();
 
-  const [task, setTask] = useState<any>(null);
+  const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ---------------------------------------
-  // 🔥 Cargar datos de la tarea + postulantes
-  // ---------------------------------------
+  // ------------------------------------------------------
+  // CARGAR TAREA + POSTULANTES
+  // ------------------------------------------------------
   useEffect(() => {
     async function loadTask() {
       try {
         const res = await fetch(`/api/tasks/${id}`);
         const data = await res.json();
-
         setTask(data);
       } catch (err) {
         console.error("ERROR LOADING TASK:", err);
@@ -42,7 +41,7 @@ export default function TaskDetailsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
 
-      {/* BOTÓN REGRESAR */}
+      {/* REGRESAR */}
       <button
         onClick={() => router.push("/dashboard/tasks")}
         className="flex items-center gap-2 text-indigo-600 hover:underline mb-4"
@@ -54,10 +53,10 @@ export default function TaskDetailsPage() {
       {/* TÍTULO */}
       <h1 className="text-3xl font-bold text-gray-900">{task.title}</h1>
 
-      {/* CARD PRINCIPAL */}
+      {/* CARD DE LA TAREA */}
       <div className="bg-white shadow rounded-xl border p-6 space-y-6">
 
-        {/* Categoría y Estado */}
+        {/* CATEGORÍA + ESTADO */}
         <div className="flex justify-between items-center">
           <span className="px-3 py-1 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
             {task.category}
@@ -68,8 +67,9 @@ export default function TaskDetailsPage() {
           </span>
         </div>
 
-        {/* INFO PRINCIPAL */}
+        {/* INFORMACIÓN PRINCIPAL */}
         <div className="space-y-3 text-gray-700 text-sm">
+
           <p className="flex items-center gap-2">
             <MapPin size={18} className="text-indigo-500" />
             <span className="font-medium">Ubicación:</span> {task.location}
@@ -108,18 +108,18 @@ export default function TaskDetailsPage() {
           </p>
         ) : (
           <div className="space-y-4">
-            {task.applications.map((app: any) => (
+            {task.applications.map((app) => (
               <div
                 key={app.id}
                 className="p-4 border rounded-xl bg-gray-50 space-y-2"
               >
-                {/* Nombre del estudiante */}
+                {/* Nombre */}
                 <p className="flex items-center gap-2 font-semibold text-gray-900">
                   <User size={18} className="text-indigo-600" />
                   {app.student.name}
                 </p>
 
-                {/* Mensaje enviado */}
+                {/* Mensaje de postulación */}
                 {app.message && (
                   <p className="text-sm italic text-gray-700">
                     “{app.message}”
@@ -134,14 +134,16 @@ export default function TaskDetailsPage() {
                   </span>
                 </p>
 
-                {/* Botón ver perfil */}
+                {/* ENVIAR MENSAJE */}
                 <button
                   onClick={() =>
-                    router.push(`/dashboard/messages?with=${app.student.id}`)
+                    router.push(
+                      `/dashboard/messages?with=${app.student.id}&task=${task.id}`
+                    )
                   }
                   className="text-indigo-600 hover:underline text-sm"
                 >
-                  Ver perfil / enviar mensaje
+                  Enviar mensaje
                 </button>
               </div>
             ))}

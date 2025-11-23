@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { MapPin, CalendarDays, Wallet } from "lucide-react";
+import { MapPin, CalendarDays, Wallet, ArrowDownWideNarrow} from "lucide-react";
 
 export default function StudentTaskDetails() {
   const router = useRouter();
@@ -87,17 +87,19 @@ export default function StudentTaskDetails() {
 
       <div className="space-y-2 text-gray-700 mt-4">
         <p className="flex items-center gap-2">
-          <MapPin size={18} /> {task.location}
+          <MapPin size={18} /> Ubicación: {task.location}
         </p>
         <p className="flex items-center gap-2">
-          <CalendarDays size={18} /> {new Date(task.createdAt).toLocaleDateString()}
+          <CalendarDays size={18} /> Publicado: {new Date(task.createdAt).toLocaleDateString()}
         </p>
         <p className="flex items-center gap-2">
-          <Wallet size={18} /> S/ {task.budget}
+          <Wallet size={18} /> Estimado: S/ {task.budget}
         </p>
+        <p className="flex items-center gap-2">
+          <ArrowDownWideNarrow size={18} /> Descripción :</p>
       </div>
 
-      <p className="mt-4">{task.description}</p>
+      <p className="mt-4"> {task.description}</p>
 
       {/* SI YA POSTULÓ */}
       {hasApplied ? (
@@ -116,7 +118,7 @@ export default function StudentTaskDetails() {
         <>
           <textarea
             placeholder="Mensaje opcional para el cliente..."
-            className="w-full border rounded-lg p-3 mt-6"
+            className="w-full border rounded-lg p-3 mt-2"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />

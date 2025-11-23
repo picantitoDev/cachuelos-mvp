@@ -93,21 +93,22 @@ export default function TasksPage() {
                 {/* BUDGET */}
                 <p className="flex items-center gap-2">
                   <Wallet size={16} className="text-indigo-600" />
-                  Estimado: <span className="font-semibold text-gray-900">S/ {t.budget}</span>
+                  Estimado:{" "}
+                  <span className="font-semibold text-gray-900">S/ {t.budget}</span>
                 </p>
               </div>
 
               {/* FOOTER */}
-              <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
-                <button className="text-indigo-600 font-medium hover:underline text-sm">
-                  Ver postulantes
-                </button>
-
+              <div className="flex justify-end items-center mt-4 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => router.push(`/dashboard/tasks/${t.id}`)}
                   className="
-                    bg-indigo-600 text-white px-3 py-1.5 rounded-md 
-                    text-xs hover:bg-indigo-700 transition
+                    bg-indigo-600 text-white 
+                    px-4 py-2 
+                    rounded-lg text-sm font-medium
+                    shadow-sm hover:shadow-md
+                    hover:bg-indigo-700 
+                    transition-all duration-200
                   "
                 >
                   Ver detalles
