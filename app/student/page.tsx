@@ -37,30 +37,34 @@ export default function StudentDashboard() {
   // -------------------------------
   // 2. Cargar número de tareas publicadas
   // -------------------------------
-  useEffect(() => {
-    if (!user) return;
+  // -------------------------------
+// 2. Cargar número de tareas publicadas
+// -------------------------------
+useEffect(() => {
+  if (!user) return;
 
-    async function loadStats() {
-      try {
-        // COUNT de tareas publicadas
-        const resTasks = await fetch(`/api/tasks?status=PUBLICADA`);
-        const tasksList = await resTasks.json();
-        setTasksAvailable(tasksList.length);
+  async function loadStats() {
+    try {
+      // COUNT de tareas publicadas
+      const resTasks = await fetch(`/api/public-tasks`);
+      const tasksList = await resTasks.json();
+      setTasksAvailable(tasksList.length);
 
-        // COUNT de mis postulaciones
-        const resApps = await fetch(`/api/applications?studentId=${user.id}`);
-        const apps = await resApps.json();
-        setApplicationsCount(apps.length);
+      // COUNT de mis postulaciones
+      const resApps = await fetch(`/api/applications?studentId=${user.id}`);
+      const apps = await resApps.json();
+      setApplicationsCount(apps.length);
 
-      } catch (error) {
-        console.error("Error loading student stats:", error);
-      }
-
-      setLoading(false);
+    } catch (error) {
+      console.error("Error loading student stats:", error);
     }
 
-    loadStats();
-  }, [user]);
+    setLoading(false);
+  }
+
+  loadStats();
+}, [user]);
+
 
   if (!user || loading)
     return <p className="text-gray-600">Cargando...</p>;

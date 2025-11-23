@@ -1,145 +1,134 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { MapPin, BadgeDollarSign, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { MapPin, CalendarDays, Wallet } from "lucide-react";
 
-export default function StudentTaskDetailsPage({ params }: { params: { id: string } }) {
+export default function StudentTaskDetails() {
   const router = useRouter();
+  const params = useParams();
 
-  const [task, setTask] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
+  const [task, setTask] = useState(null);
+  const [message, setMessage] = useState("");
+  const [user, setUser] = useState(null);
+  const [hasApplied, setHasApplied] = useState(false);
 
-  // -----------------------------
-  // Obtener detalle de la tarea
-  // -----------------------------
+  useEffect(() => {
+    const u = localStorage.getItem("user");
+    if (!u) return router.push("/login");
+
+    const parsed = JSON.parse(u);
+    if (parsed.role !== "STUDENT") return router.push("/dashboard");
+
+    setUser(parsed);
+  }, []);
+
   useEffect(() => {
     async function loadTask() {
-      try {
-        const res = await fetch(`/api/tasks/${params.id}`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          console.error("Error loading task:", data.error);
-          return;
-        }
-
-        setTask(data);
-      } catch (err) {
-        console.error("Error:", err);
-      }
-      setLoading(false);
+      const res = await fetch(`/api/tasks/${params.id}`);
+      const data = await res.json();
+      setTask(data);
     }
-
     loadTask();
   }, [params.id]);
 
-  if (loading) return <p className="text-gray-600">Cargando...</p>;
-  if (!task) return <p className="text-red-600">Tarea no encontrada.</p>;
+  // 🔍 Revisar si ya postuló
+  useEffect(() => {
+    if (!user) return;
+
+    async function checkApplication() {
+      const res = await fetch(`/api/applications/check?taskId=${params.id}&studentId=${user.id}`);
+      const data = await res.json();
+      setHasApplied(data.applied);
+    }
+
+    checkApplication();
+  }, [user, params.id]);
+
+  if (!task) return <p>Cargando...</p>;
 
   // -----------------------------
-  // Postular a tarea
+  // POSTULAR
   // -----------------------------
   async function handleApply() {
-    setApplying(true);
+    const res = await fetch("/api/applications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        taskId: task.id,
+        studentId: user.id,
+        message,
+      }),
+    });
 
-    const user = localStorage.getItem("user");
-    if (!user) {
-      alert("Debes iniciar sesión.");
-      router.push("/login");
-      return;
-    }
+    if (!res.ok) return alert("Error al postular");
 
-    const { id: studentId } = JSON.parse(user);
-
-    try {
-      const res = await fetch("/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taskId: task.id,
-          studentId,
-          message: "Estoy interesado en ayudar con esta tarea.",
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "No se pudo postular.");
-      } else {
-        alert("Postulación enviada correctamente.");
-        router.push("/student/applications");
-      }
-    } catch (err) {
-      alert("Error al postular.");
-      console.error(err);
-    }
-
-    setApplying(false);
+    alert("Postulación enviada");
+    setHasApplied(true);
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-
-      {/* Regresar */}
+    <div className="space-y-6">
       <button
         onClick={() => router.back()}
-        className="text-indigo-600 hover:underline text-sm"
+        className="text-indigo-600 hover:underline"
       >
         ← Regresar
       </button>
 
-      {/* Tarjeta principal */}
-      <div className="bg-white border rounded-xl shadow p-6 space-y-4">
+      <h1 className="text-3xl font-bold">{task.title}</h1>
 
-        {/* Header */}
-        <div className="flex justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">{task.title}</h1>
-        </div>
+      <p className="text-sm text-indigo-600 font-semibold">{task.category}</p>
 
-        {/* Detalles */}
-        <div className="space-y-2 text-gray-700">
-          <p className="flex items-center gap-2">
-            <MapPin size={18} className="text-indigo-600" />
-            {task.location}
-          </p>
+      {/* CLIENTE */}
+      <p className="text-gray-700 text-sm">
+        Publicado por: <span className="font-semibold">{task.client?.name}</span>
+      </p>
 
-          <p className="flex items-center gap-2">
-            <Calendar size={18} className="text-indigo-600" />
-            Publicada: {new Date(task.createdAt).toLocaleDateString("es-PE")}
-          </p>
-
-          <p className="flex items-center gap-2">
-            <BadgeDollarSign size={18} className="text-indigo-600" />
-            Presupuesto: <span className="font-semibold">S/ {task.budget}</span>
-          </p>
-        </div>
-
-        {/* Descripción */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">Descripción</h2>
-          <p className="text-gray-700 whitespace-pre-line">{task.description}</p>
-        </div>
-
-        {/* Botón Postular */}
-        <button
-          onClick={handleApply}
-          disabled={applying}
-          className="bg-indigo-600 text-white w-full py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-70"
-        >
-          {applying ? "Enviando..." : "Postular"}
-        </button>
-      </div>
-
-      {/* Postulantes */}
-      <div className="bg-white border rounded-xl shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Postulantes (pronto)</h2>
-        <p className="text-gray-600 text-sm">
-          Aquí verás los estudiantes que postulan a esta tarea.
+      <div className="space-y-2 text-gray-700 mt-4">
+        <p className="flex items-center gap-2">
+          <MapPin size={18} /> {task.location}
+        </p>
+        <p className="flex items-center gap-2">
+          <CalendarDays size={18} /> {new Date(task.createdAt).toLocaleDateString()}
+        </p>
+        <p className="flex items-center gap-2">
+          <Wallet size={18} /> S/ {task.budget}
         </p>
       </div>
+
+      <p className="mt-4">{task.description}</p>
+
+      {/* SI YA POSTULÓ */}
+      {hasApplied ? (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg mt-6">
+          <p className="font-semibold text-green-700">
+            Ya postulaste a esta tarea 👍
+          </p>
+          <button
+            onClick={() => router.push("/student/applications")}
+            className="mt-3 text-indigo-600 hover:underline"
+          >
+            Ver mis postulaciones
+          </button>
+        </div>
+      ) : (
+        <>
+          <textarea
+            placeholder="Mensaje opcional para el cliente..."
+            className="w-full border rounded-lg p-3 mt-6"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+
+          <button
+            onClick={handleApply}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg mt-4 hover:bg-indigo-700"
+          >
+            Postularme
+          </button>
+        </>
+      )}
     </div>
   );
 }

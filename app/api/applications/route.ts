@@ -1,88 +1,68 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/db";
+import prisma from "@/lib/db"; // tu path correcto
 
-// ==============================================
-// POST → Crear una postulación
-// ==============================================
+// Crear postulación
 export async function POST(req: Request) {
   try {
-    const { taskId, studentId, message } = await req.json();
+    const { studentId, taskId, message } = await req.json();
 
-    if (!taskId || !studentId) {
+    if (!studentId || !taskId) {
       return NextResponse.json(
-        { error: "Faltan datos obligatorios." },
+        { error: "Faltan datos obligatorios" },
         { status: 400 }
       );
     }
 
-    // 1. Verificar que la tarea exista
-    const task = await prisma.task.findUnique({ where: { id: Number(taskId) } });
-
-    if (!task) {
-      return NextResponse.json(
-        { error: "La tarea no existe." },
-        { status: 404 }
-      );
-    }
-
-    // 2. Evitar postulaciones duplicadas
-    const alreadyApplied = await prisma.application.findFirst({
-      where: {
-        taskId: Number(taskId),
-        studentId: Number(studentId),
-      },
+    // Verificar si ya postuló antes
+    const exists = await prisma.application.findFirst({
+      where: { studentId, taskId },
     });
 
-    if (alreadyApplied) {
+    if (exists) {
       return NextResponse.json(
-        { error: "Ya te has postulado a esta tarea." },
-        { status: 400 }
+        { error: "Ya has postulado a esta tarea" },
+        { status: 409 }
       );
     }
 
-    // 3. Crear postulación
+    // Crear la postulación
     const application = await prisma.application.create({
       data: {
-        taskId: Number(taskId),
-        studentId: Number(studentId),
-        message: message || "",
-        status: "PENDIENTE",
+        studentId,
+        taskId,
+        message: message || null,
       },
     });
 
     return NextResponse.json(application);
-  } catch (err: any) {
-    console.error("APPLICATION ERROR:", err);
-    return NextResponse.json({ error: "Error en el servidor." }, { status: 500 });
+
+  } catch (error) {
+    console.error("Error en POST /api/applications", error);
+    return NextResponse.json(
+      { error: "Error en el servidor" },
+      { status: 500 }
+    );
   }
 }
 
-// ==============================================
-// GET → Ver aplicaciones (opcional)
-// Ejemplo: /api/applications?studentId=3
-// ==============================================
+
+// Obtener postulaciones de un estudiante
 export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const studentId = searchParams.get("studentId");
+  const url = new URL(req.url);
+  const studentId = url.searchParams.get("studentId");
 
-    if (!studentId) {
-      return NextResponse.json(
-        { error: "studentId requerido" },
-        { status: 400 }
-      );
-    }
+  if (!studentId)
+    return NextResponse.json(
+      { error: "studentId requerido" },
+      { status: 400 }
+    );
 
-    const applications = await prisma.application.findMany({
-      where: { studentId: Number(studentId) },
-      include: {
-        task: true, // Trae info de la tarea
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  const apps = await prisma.application.findMany({
+    where: { studentId: Number(studentId) },
+    include: {
+      task: true,
+    },
+  });
 
-    return NextResponse.json(applications);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  return NextResponse.json(apps);
 }
