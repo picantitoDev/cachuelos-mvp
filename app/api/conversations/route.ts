@@ -13,9 +13,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // ----------------------------------------------------------
-    // 1. Buscar TODAS las conversaciones donde el usuario participa
-    // ----------------------------------------------------------
+    // 1. Buscar TODOS los mensajes en los que participa
     const messages = await prisma.message.findMany({
       where: {
         OR: [
@@ -26,15 +24,20 @@ export async function GET(req: Request) {
       include: {
         sender: { select: { id: true, name: true } },
         receiver: { select: { id: true, name: true } },
+        task: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // ----------------------------------------------------------
-    // 2. Agrupar por (otroUsuarioId + taskId)
-    // ----------------------------------------------------------
     const convMap = new Map();
 
+    // 2. Agrupar por conversación (otherUser + taskId)
     for (const msg of messages) {
       const otherUser =
         msg.senderId === userId ? msg.receiver : msg.sender;
@@ -46,16 +49,16 @@ export async function GET(req: Request) {
           id: key,
           otherUserId: otherUser.id,
           otherUserName: otherUser.name,
-          taskId: msg.taskId,
+          taskId: msg.task.id,
+          taskTitle: msg.task.title,
+          taskStatus: msg.task.status,
           lastMessage: msg.content,
           createdAt: msg.createdAt,
         });
       }
     }
 
-    // ----------------------------------------------------------
-    // 3. Ordenar por último mensaje
-    // ----------------------------------------------------------
+    // 3. Ordenar por el más reciente
     const conversations = Array.from(convMap.values()).sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
     );

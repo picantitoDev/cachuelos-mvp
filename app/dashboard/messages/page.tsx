@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function MessagesPage() {
   const params = useSearchParams();
+  const router = useRouter();
 
   const withUser = params.get("with");
   const taskId = params.get("task");
@@ -14,51 +15,54 @@ export default function MessagesPage() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
+  const [task, setTask] = useState(null);
 
-  // ================================
-  // 1️⃣ Cargar usuario logueado
-  // ================================
+  // 1️⃣ Usuario logueado
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem("user") || "{}");
     setUser(u);
   }, []);
 
-  // =======================================
-  // 2️⃣ Cargar datos del usuario con quien hablo
-  // =======================================
+  // 2️⃣ Cargar usuario con quien hablo
   useEffect(() => {
     if (!withUser) return;
 
     async function loadOtherUser() {
       const res = await fetch(`/api/users/${withUser}`);
       const data = await res.json();
-
-      if (!data.error) {
-        setOtherUser(data);
-      }
+      if (!data.error) setOtherUser(data);
     }
 
     loadOtherUser();
   }, [withUser]);
 
-  // =================================
-  // 3️⃣ Cargar lista de conversaciones
-  // =================================
+  // 3️⃣ Cargar la tarea asociada
   useEffect(() => {
-    if (!user?.id) return;
+    if (!taskId) return;
 
-    async function loadConversations() {
-      const res = await fetch(`/api/conversations?userId=${user.id}`);
+    async function loadTask() {
+      const res = await fetch(`/api/tasks/${taskId}`);
       const data = await res.json();
-      setConversations(data);
+      if (!data.error) setTask(data);
     }
 
-    loadConversations();
+    loadTask();
+  }, [taskId]);
+
+  // 4️⃣ Cargar conversaciones
+  async function refreshConversations() {
+    if (!user?.id) return;
+
+    const res = await fetch(`/api/conversations?userId=${user.id}`);
+    const data = await res.json();
+    setConversations(data);
+  }
+
+  useEffect(() => {
+    refreshConversations();
   }, [user]);
 
-  // ===============================
-  // 4️⃣ Cargar mensajes del chat actual
-  // ===============================
+  // 5️⃣ Cargar mensajes del chat actual
   useEffect(() => {
     if (!withUser || !taskId || !user?.id) return;
 
@@ -73,9 +77,13 @@ export default function MessagesPage() {
     loadMessages();
   }, [withUser, taskId, user]);
 
-  // ===============================
-  // 5️⃣ Enviar mensaje
-  // ===============================
+  // 6️⃣ Auto-scroll
+  useEffect(() => {
+    const el = document.getElementById("bottom-chat");
+    el?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // 7️⃣ Enviar mensaje
   async function sendMessage() {
     if (!input.trim()) return;
 
@@ -94,16 +102,14 @@ export default function MessagesPage() {
       const msg = await res.json();
       setMessages((prev) => [...prev, msg]);
       setInput("");
+      refreshConversations();
     }
   }
 
-  // ===============================
-  //  UI
-  // ===============================
   return (
     <div className="grid grid-cols-3 h-[85vh] bg-white rounded-xl shadow">
 
-      {/* LEFT COLUMN — Conversaciones */}
+      {/* LEFT — Conversaciones */}
       <div className="border-r p-4 overflow-y-auto">
         <h2 className="font-bold mb-4">Conversaciones</h2>
 
@@ -116,31 +122,44 @@ export default function MessagesPage() {
             key={c.id}
             className="block p-3 w-full text-left hover:bg-gray-100 rounded"
             onClick={() =>
-              (window.location.href = `/dashboard/messages?with=${c.otherUserId}&task=${c.taskId}`)
+              router.push(`/dashboard/messages?with=${c.otherUserId}&task=${c.taskId}`)
             }
           >
             <p className="font-semibold">{c.otherUserName}</p>
-            <p className="text-xs text-gray-500 truncate">{c.lastMessage}</p>
+
+            <p className="text-[11px] text-gray-500">
+              {c.taskTitle} — <span className="italic">{c.lastMessage}</span>
+            </p>
           </button>
         ))}
       </div>
 
-      {/* RIGHT COLUMN — Chat */}
+      {/* RIGHT — Chat */}
       <div className="col-span-2 flex flex-col">
 
-        {/* SI AÚN NO SE HA SELECCIONADO CHAT */}
         {!withUser || !taskId ? (
           <p className="p-10 text-gray-500">Selecciona una conversación</p>
         ) : (
           <>
+            {/* Header */}
+            <div className="border-b p-4 bg-gray-50">
+              <p className="text-lg font-semibold">
+                {otherUser ? otherUser.name : "Cargando..."}
+              </p>
 
-            {/* Header del chat — nombre del usuario */}
-            <div className="border-b p-4 font-semibold text-lg bg-gray-50">
-              {otherUser ? otherUser.name : "Cargando..."}
+              {task && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Tarea: <span className="font-medium">{task.title}</span> ·
+                  <span className="text-indigo-600 font-semibold ml-1">
+                    {task.status}
+                  </span>
+                </p>
+              )}
             </div>
 
             {/* Lista de mensajes */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4">
+            <div className="flex-1 p-6 overflow-y-auto flex flex-col space-y-3">
+
               {messages.length === 0 && (
                 <p className="text-gray-400 text-sm">Inicia la conversación…</p>
               )}
@@ -148,18 +167,23 @@ export default function MessagesPage() {
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`p-3 rounded-lg max-w-xs ${
-                    msg.senderId === user.id
-                      ? "ml-auto bg-indigo-100 text-right"
-                      : "bg-gray-200"
-                  }`}
+                  className={`
+                    inline-block px-4 py-2 rounded-lg break-words
+                    max-w-[70%]
+                    ${msg.senderId === user.id
+                      ? "self-end bg-indigo-100 text-right"
+                      : "self-start bg-gray-200"
+                    }
+                  `}
                 >
                   {msg.content}
                 </div>
               ))}
+
+              <div id="bottom-chat"></div>
             </div>
 
-            {/* INPUT */}
+            {/* Input */}
             <div className="p-4 border-t flex items-center gap-2">
               <input
                 className="flex-1 border rounded-lg p-3"
