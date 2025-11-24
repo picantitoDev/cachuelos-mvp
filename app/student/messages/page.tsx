@@ -7,8 +7,8 @@ export default function StudentMessagesPage() {
   const params = useSearchParams();
   const router = useRouter();
 
-  const withUser = params.get("with");   // ID del cliente
-  const taskId = params.get("task");     // Tarea asociada
+  const withUser = params.get("with");
+  const taskId = params.get("task");
 
   const [user, setUser] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
@@ -19,17 +19,13 @@ export default function StudentMessagesPage() {
 
   const [input, setInput] = useState("");
 
-  // =========================================
-  // 1️⃣ Cargar estudiante logueado
-  // =========================================
+  // Usuario logueado
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem("user") || "{}");
     setUser(u);
   }, []);
 
-  // =========================================
-  // 2️⃣ Cargar conversaciones del estudiante
-  // =========================================
+  // Conversaciones
   useEffect(() => {
     if (!user?.id) return;
 
@@ -42,9 +38,7 @@ export default function StudentMessagesPage() {
     loadConversations();
   }, [user]);
 
-  // =========================================
-  // 3️⃣ Cargar info del otro usuario
-  // =========================================
+  // Usuario con quien hablo
   useEffect(() => {
     if (!withUser) return;
 
@@ -56,9 +50,7 @@ export default function StudentMessagesPage() {
     loadOther();
   }, [withUser]);
 
-  // =========================================
-  // 4️⃣ Cargar tarea asociada
-  // =========================================
+  // Tarea asociada
   useEffect(() => {
     if (!taskId) return;
 
@@ -70,9 +62,7 @@ export default function StudentMessagesPage() {
     loadTask();
   }, [taskId]);
 
-  // =========================================
-  // 5️⃣ Cargar mensajes del chat
-  // =========================================
+  // Mensajes
   useEffect(() => {
     if (!withUser || !taskId || !user?.id) return;
 
@@ -87,9 +77,13 @@ export default function StudentMessagesPage() {
     loadMessages();
   }, [withUser, taskId, user]);
 
-  // =========================================
-  // 6️⃣ Enviar mensaje
-  // =========================================
+  // Auto-scroll
+  useEffect(() => {
+    const el = document.getElementById("bottom-chat");
+    el?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Enviar mensaje
   async function sendMessage() {
     if (!input.trim()) return;
 
@@ -111,96 +105,109 @@ export default function StudentMessagesPage() {
     }
   }
 
-  // =========================================
-  // 7️⃣ Auto-scroll
-  // =========================================
-  useEffect(() => {
-    const el = document.getElementById("bottom-chat");
-    el?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   return (
-    <div className="grid grid-cols-3 h-[85vh] bg-white rounded-xl shadow">
+    <div className="grid grid-cols-3 min-h-[85vh] bg-white rounded-xl shadow">
 
       {/* LEFT — Conversaciones */}
-      <div className="border-r p-4 overflow-y-auto">
-        <h2 className="font-bold mb-4">Conversaciones</h2>
+      <div className="border-r bg-gray-50 p-4 overflow-y-auto">
+        <h2 className="font-bold mb-4 text-gray-800 text-lg">Conversaciones</h2>
 
         {conversations.length === 0 && (
           <p className="text-sm text-gray-500">Aún no tienes mensajes</p>
         )}
 
-        {conversations.map((c) => (
-          <button
-            key={c.id}
-            onClick={() =>
-              router.push(`/student/messages?with=${c.otherUserId}&task=${c.taskId}`)
-            }
-            className="block p-3 w-full text-left rounded hover:bg-gray-100"
-          >
-            <p className="font-semibold">{c.otherUserName}</p>
-            <p className="text-[11px] text-gray-500">
-              {c.taskTitle} — <span className="italic">{c.lastMessage}</span>
-            </p>
-          </button>
-        ))}
+        <div className="space-y-2">
+          {conversations.map((c) => {
+            const isActive =
+              Number(c.otherUserId) === Number(withUser) &&
+              Number(c.taskId) === Number(taskId);
+
+            return (
+              <button
+                key={c.id}
+                onClick={() =>
+                  router.push(
+                    `/student/messages?with=${c.otherUserId}&task=${c.taskId}`
+                  )
+                }
+                className={`w-full p-3 text-left rounded-lg transition ${
+                  isActive
+                    ? "bg-indigo-100 border border-indigo-300 shadow-sm"
+                    : "hover:bg-gray-200"
+                }`}
+              >
+                <p className="font-semibold text-gray-900">
+                  {c.otherUserName}
+                </p>
+                <p className="text-[11px] text-gray-500 truncate">
+                  {c.taskTitle} —{" "}
+                  <span className="italic">{c.lastMessage}</span>
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* RIGHT — Chat */}
       <div className="col-span-2 flex flex-col">
+
         {!withUser || !taskId ? (
           <p className="p-10 text-gray-500">Selecciona una conversación</p>
         ) : (
           <>
-            {/* HEADER DEL CHAT */}
-            <div className="border-b p-4 bg-gray-50">
-              <p className="text-lg font-semibold">
+
+            {/* Header */}
+            <div className="border-b bg-white p-4 shadow-sm">
+              <p className="text-lg font-bold text-gray-900">
                 {otherUser ? otherUser.name : "Cargando..."}
               </p>
 
               {task && (
-                <p className="text-sm text-gray-500">
-                  Tarea: <span className="font-medium">{task.title}</span> · 
-                  <span className="text-indigo-600 ml-1 font-medium">
+                <p className="text-sm text-gray-600">
+                  Tarea: <span className="font-semibold">{task.title}</span> ·
+                  <span className="text-indigo-600 ml-1 font-semibold">
                     {task.status}
                   </span>
                 </p>
               )}
             </div>
 
-            {/* MENSAJES */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4">
+            {/* MENSAJES — Scroll interno fijo */}
+            <div className="p-6 flex flex-col space-y-4 bg-white h-[60vh] overflow-y-auto">
+
               {messages.length === 0 ? (
                 <p className="text-gray-400 text-sm">Aún no hay mensajes…</p>
               ) : (
                 messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`p-3 rounded-lg max-w-xs ${
+                    className={`block px-4 py-2 rounded-xl max-w-[75%] break-words ${
                       msg.senderId === user.id
-                        ? "ml-auto bg-indigo-100 text-right"
-                        : "bg-gray-200"
+                        ? "self-end bg-indigo-100 text-right"
+                        : "self-start bg-gray-200"
                     }`}
                   >
                     {msg.content}
                   </div>
                 ))
               )}
+
               <div id="bottom-chat"></div>
             </div>
 
             {/* INPUT */}
-            <div className="p-4 border-t flex items-center gap-2">
+            <div className="p-4 border-t bg-white flex items-center gap-3 shadow-inner">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Escribe tu mensaje…"
-                className="flex-1 border rounded-lg p-3"
+                className="flex-1 border rounded-xl p-3 bg-gray-100 focus:bg-white focus:ring-2 focus:ring-indigo-400 transition"
               />
 
               <button
                 onClick={sendMessage}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
+                className="bg-indigo-600 text-white px-5 py-2 rounded-xl hover:bg-indigo-700 shadow-md transition"
               >
                 Enviar
               </button>
@@ -208,7 +215,6 @@ export default function StudentMessagesPage() {
           </>
         )}
       </div>
-
     </div>
   );
 }

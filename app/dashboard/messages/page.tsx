@@ -23,7 +23,7 @@ export default function MessagesPage() {
     setUser(u);
   }, []);
 
-  // 2️⃣ Cargar usuario con quien hablo
+  // 2️⃣ Usuario con quien hablo
   useEffect(() => {
     if (!withUser) return;
 
@@ -36,7 +36,7 @@ export default function MessagesPage() {
     loadOtherUser();
   }, [withUser]);
 
-  // 3️⃣ Cargar la tarea asociada
+  // 3️⃣ Cargar tarea
   useEffect(() => {
     if (!taskId) return;
 
@@ -62,7 +62,7 @@ export default function MessagesPage() {
     refreshConversations();
   }, [user]);
 
-  // 5️⃣ Cargar mensajes del chat actual
+  // 5️⃣ Cargar mensajes
   useEffect(() => {
     if (!withUser || !taskId || !user?.id) return;
 
@@ -107,31 +107,42 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="grid grid-cols-3 h-[85vh] bg-white rounded-xl shadow">
+    <div className="grid grid-cols-3 min-h-[85vh] bg-white rounded-xl shadow">
 
       {/* LEFT — Conversaciones */}
-      <div className="border-r p-4 overflow-y-auto">
-        <h2 className="font-bold mb-4">Conversaciones</h2>
+      <div className="border-r bg-gray-50 p-4 overflow-y-auto">
+        <h2 className="font-bold mb-4 text-gray-800 text-lg">Conversaciones</h2>
 
         {conversations.length === 0 && (
           <p className="text-gray-500 text-sm">Aún no tienes chats</p>
         )}
 
-        {conversations.map((c) => (
-          <button
-            key={c.id}
-            className="block p-3 w-full text-left hover:bg-gray-100 rounded"
-            onClick={() =>
-              router.push(`/dashboard/messages?with=${c.otherUserId}&task=${c.taskId}`)
-            }
-          >
-            <p className="font-semibold">{c.otherUserName}</p>
+        <div className="space-y-2">
+          {conversations.map((c) => {
+            const isActive =
+              Number(c.otherUserId) === Number(withUser) &&
+              Number(c.taskId) === Number(taskId);
 
-            <p className="text-[11px] text-gray-500">
-              {c.taskTitle} — <span className="italic">{c.lastMessage}</span>
-            </p>
-          </button>
-        ))}
+            return (
+              <button
+                key={c.id}
+                className={`w-full p-3 text-left rounded-lg transition ${
+                  isActive
+                    ? "bg-indigo-100 border border-indigo-300 shadow-sm"
+                    : "hover:bg-gray-200"
+                }`}
+                onClick={() =>
+                  router.push(`/dashboard/messages?with=${c.otherUserId}&task=${c.taskId}`)
+                }
+              >
+                <p className="font-semibold">{c.otherUserName}</p>
+                <p className="text-[11px] text-gray-500 truncate">
+                  {c.taskTitle} — <span className="italic">{c.lastMessage}</span>
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* RIGHT — Chat */}
@@ -141,15 +152,15 @@ export default function MessagesPage() {
           <p className="p-10 text-gray-500">Selecciona una conversación</p>
         ) : (
           <>
-            {/* Header */}
-            <div className="border-b p-4 bg-gray-50">
-              <p className="text-lg font-semibold">
+            {/* HEADER */}
+            <div className="border-b bg-white p-4 shadow-sm">
+              <p className="text-lg font-bold text-gray-900">
                 {otherUser ? otherUser.name : "Cargando..."}
               </p>
 
               {task && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Tarea: <span className="font-medium">{task.title}</span> ·
+                <p className="text-sm text-gray-600">
+                  Tarea: <span className="font-semibold">{task.title}</span> ·
                   <span className="text-indigo-600 font-semibold ml-1">
                     {task.status}
                   </span>
@@ -157,42 +168,39 @@ export default function MessagesPage() {
               )}
             </div>
 
-            {/* Lista de mensajes */}
-            <div className="flex-1 p-6 overflow-y-auto flex flex-col space-y-3">
+            {/* MENSAJES — FIX DE SCROLL INTERNO */}
+            <div className="p-6 flex flex-col space-y-4 bg-white h-[60vh] overflow-y-auto">
 
-              {messages.length === 0 && (
+              {messages.length === 0 ? (
                 <p className="text-gray-400 text-sm">Inicia la conversación…</p>
+              ) : (
+                messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`block px-4 py-2 rounded-xl max-w-[75%] break-words ${
+                      msg.senderId === user.id
+                        ? "self-end bg-indigo-100 text-right"
+                        : "self-start bg-gray-200"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                ))
               )}
-
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`
-                    inline-block px-4 py-2 rounded-lg break-words
-                    max-w-[70%]
-                    ${msg.senderId === user.id
-                      ? "self-end bg-indigo-100 text-right"
-                      : "self-start bg-gray-200"
-                    }
-                  `}
-                >
-                  {msg.content}
-                </div>
-              ))}
 
               <div id="bottom-chat"></div>
             </div>
 
-            {/* Input */}
-            <div className="p-4 border-t flex items-center gap-2">
+            {/* INPUT */}
+            <div className="p-4 border-t bg-white flex items-center gap-3 shadow-inner">
               <input
-                className="flex-1 border rounded-lg p-3"
+                className="flex-1 border rounded-xl p-3 bg-gray-100 focus:bg-white focus:ring-2 focus:ring-indigo-400 transition"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Escribe tu mensaje…"
               />
               <button
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
+                className="bg-indigo-600 text-white px-5 py-2 rounded-xl hover:bg-indigo-700 shadow-md transition"
                 onClick={sendMessage}
               >
                 Enviar
@@ -201,6 +209,7 @@ export default function MessagesPage() {
           </>
         )}
       </div>
+
     </div>
   );
 }
