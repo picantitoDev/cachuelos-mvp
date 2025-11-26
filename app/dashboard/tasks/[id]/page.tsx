@@ -14,12 +14,12 @@ export default function TaskDetailsPage() {
   const router = useRouter();
   const { id } = useParams();
 
-  const [task, setTask] = useState(null);
+  const [task, setTask] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // ------------------------------------------------------
+  // ======================================================
   // CARGAR TAREA + POSTULANTES
-  // ------------------------------------------------------
+  // ======================================================
   useEffect(() => {
     async function loadTask() {
       try {
@@ -37,6 +37,28 @@ export default function TaskDetailsPage() {
 
   if (loading) return <p className="p-10">Cargando…</p>;
   if (!task) return <p className="p-10 text-red-600">Tarea no encontrada.</p>;
+
+  // ======================================================
+  // ACEPTAR APLICACIÓN
+  // ======================================================
+  async function handleSelect(appId: number) {
+    try {
+      const res = await fetch(`/api/applications/${appId}/accept`, {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error();
+
+      alert("Estudiante seleccionado con éxito");
+
+      // Recargar datos actualizados sin refrescar toda la pantalla
+      const updated = await fetch(`/api/tasks/${id}`).then((r) => r.json());
+      setTask(updated);
+
+    } catch (err) {
+      alert("Error al seleccionar estudiante");
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -67,7 +89,7 @@ export default function TaskDetailsPage() {
           </span>
         </div>
 
-        {/* INFORMACIÓN PRINCIPAL */}
+        {/* INFO PRINCIPAL */}
         <div className="space-y-3 text-gray-700 text-sm">
 
           <p className="flex items-center gap-2">
@@ -96,7 +118,9 @@ export default function TaskDetailsPage() {
         </div>
       </div>
 
-      {/* POSTULANTES */}
+      {/* ======================================================
+         POSTULANTES 
+      ====================================================== */}
       <div className="bg-white shadow rounded-xl border p-6">
         <h3 className="font-semibold text-lg text-gray-900 mb-4">
           Postulantes
@@ -108,45 +132,91 @@ export default function TaskDetailsPage() {
           </p>
         ) : (
           <div className="space-y-4">
-            {task.applications.map((app) => (
-              <div
-                key={app.id}
-                className="p-4 border rounded-xl bg-gray-50 space-y-2"
-              >
-                {/* Nombre */}
-                <p className="flex items-center gap-2 font-semibold text-gray-900">
-                  <User size={18} className="text-indigo-600" />
-                  {app.student.name}
-                </p>
+            {task.applications.map((app: any) => {
+              const isAccepted = app.status === "ACEPTADA";
+              const isRejected = app.status === "RECHAZADA";
 
-                {/* Mensaje de postulación */}
-                {app.message && (
-                  <p className="text-sm italic text-gray-700">
-                    “{app.message}”
-                  </p>
-                )}
-
-                {/* Estado */}
-                <p className="text-sm">
-                  Estado:{" "}
-                  <span className="font-semibold text-indigo-600">
-                    {app.status}
-                  </span>
-                </p>
-
-                {/* ENVIAR MENSAJE */}
-                <button
-                  onClick={() =>
-                    router.push(
-                      `/dashboard/messages?with=${app.student.id}&task=${task.id}`
-                    )
-                  }
-                  className="text-indigo-600 hover:underline text-sm"
+              return (
+                <div
+                  key={app.id}
+                  className="p-4 border rounded-xl bg-gray-50 space-y-3"
                 >
-                  Enviar mensaje
-                </button>
-              </div>
-            ))}
+                  {/* Nombre */}
+                  <p className="flex items-center gap-2 font-semibold text-gray-900">
+                    <User size={18} className="text-indigo-600" />
+                    {app.student.name}
+                  </p>
+
+                  {/* Mensaje */}
+                  {app.message && (
+                    <p className="text-sm italic text-gray-700">
+                      “{app.message}”
+                    </p>
+                  )}
+
+                  {/* Estado */}
+                  <p className="text-sm">
+                    Estado:{" "}
+                    <span
+                      className={`font-semibold ${
+                        isAccepted
+                          ? "text-green-600"
+                          : isRejected
+                          ? "text-red-600"
+                          : "text-indigo-600"
+                      }`}
+                    >
+                      {app.status}
+                    </span>
+                  </p>
+
+                  {/* BOTONES */}
+                  <div className="flex items-center gap-4 pt-2">
+
+                    {/* Ver perfil */}
+                    <button
+                      className="text-indigo-600 hover:underline text-sm"
+                      onClick={() => alert("Pendiente: vista de perfil")}
+                    >
+                      Ver perfil
+                    </button>
+
+                    {/* Enviar mensaje */}
+                    <button
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/messages?with=${app.student.id}&task=${task.id}`
+                        )
+                      }
+                      className="text-indigo-600 hover:underline text-sm"
+                    >
+                      Enviar mensaje
+                    </button>
+
+                    {/* BOTÓN SELECCIONAR */}
+                    {task.status === "PUBLICADA" ||
+                    task.status === "EN_NEGOCIACION" ? (
+                      isAccepted ? (
+                        <span className="px-4 py-2 rounded-lg bg-green-100 text-green-700 font-medium">
+                          Seleccionado
+                        </span>
+                      ) : isRejected ? (
+                        <span className="px-4 py-2 rounded-lg bg-gray-200 text-gray-500">
+                          Rechazado
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleSelect(app.id)}
+                          className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                        >
+                          Seleccionar
+                        </button>
+                      )
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
