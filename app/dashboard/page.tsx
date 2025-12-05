@@ -7,6 +7,7 @@ import {
   CheckCircle,
   MapPin,
   Wallet,
+  Plus,
 } from "lucide-react";
 
 export default function DashboardClient() {
@@ -21,61 +22,60 @@ export default function DashboardClient() {
   // -------------------------------
   useEffect(() => {
     const u = localStorage.getItem("user");
-    if (!u) {
-      router.push("/login");
-      return;
-    }
+    if (!u) return router.push("/login");
     setUser(JSON.parse(u));
   }, [router]);
 
   // -------------------------------
-  // 2. Cargar las últimas tareas
+  // 2. Cargar tareas
   // -------------------------------
   useEffect(() => {
     if (!user) return;
 
-    async function loadTasks() {
+    async function load() {
       try {
         const res = await fetch(`/api/tasks?clientId=${user.id}`);
         const data = await res.json();
         setTasks(data);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
       }
       setLoading(false);
     }
 
-    loadTasks();
+    load();
   }, [user]);
 
-  if (!user) return <p>Cargando...</p>;
+  if (!user) return <p className="p-10">Cargando...</p>;
 
   const completedTasks = tasks.filter((t) => t.status === "COMPLETADA").length;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 animate-fadeIn">
 
-      {/* ENCABEZADO */}
-      <div className="flex justify-between items-center">
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-extrabold text-gray-900">
           Hola, {user.name}!
         </h1>
 
         <button
           onClick={() => router.push("/dashboard/tasks/new")}
-          className="bg-indigo-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-indigo-700"
+          className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-md"
         >
           + Crear nueva tarea
         </button>
       </div>
 
-      {/* TARJETAS RESUMEN */}
+      {/* CARDS RESUMEN */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+
         {/* Total creadas */}
-        <div className="p-6 bg-white shadow rounded-xl border">
+        <div className="p-6 bg-white shadow-lg rounded-xl border hover:shadow-xl transition">
           <div className="flex items-center gap-4">
-            <ClipboardList className="text-indigo-600" size={36} />
+            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
+              <ClipboardList size={26} />
+            </div>
             <div>
               <p className="text-sm text-gray-500">Tareas creadas</p>
               <p className="text-3xl font-bold">{tasks.length}</p>
@@ -84,9 +84,11 @@ export default function DashboardClient() {
         </div>
 
         {/* Completadas */}
-        <div className="p-6 bg-white shadow rounded-xl border">
+        <div className="p-6 bg-white shadow-lg rounded-xl border hover:shadow-xl transition">
           <div className="flex items-center gap-4">
-            <CheckCircle className="text-green-600" size={36} />
+            <div className="p-3 bg-green-100 text-green-600 rounded-xl">
+              <CheckCircle size={26} />
+            </div>
             <div>
               <p className="text-sm text-gray-500">Tareas completadas</p>
               <p className="text-3xl font-bold">{completedTasks}</p>
@@ -94,23 +96,51 @@ export default function DashboardClient() {
           </div>
         </div>
 
+        {/* Progreso / estadísticas */}
+        <div className="p-6 bg-white shadow-lg rounded-xl border hover:shadow-xl transition">
+          <p className="text-sm text-gray-500 mb-1">Progreso general</p>
+          <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+            <div
+              className="bg-indigo-600 h-3 rounded-full"
+              style={{
+                width:
+                  tasks.length > 0
+                    ? `${(completedTasks / tasks.length) * 100}%`
+                    : "0%",
+              }}
+            ></div>
+          </div>
+          <p className="text-gray-600 mt-2 text-sm">
+            {completedTasks} de {tasks.length} tareas completadas
+          </p>
+        </div>
       </div>
 
-      {/* ÚLTIMAS TAREAS CREADAS */}
+      {/* ÚLTIMAS TAREAS */}
       <div>
-        <h2 className="text-xl font-bold mb-4">Últimas tareas creadas</h2>
+        <h2 className="text-2xl font-bold mb-4">Últimas tareas creadas</h2>
 
         {loading ? (
           <p className="text-gray-500">Cargando...</p>
         ) : tasks.length === 0 ? (
-          <p className="text-gray-500">Aún no has creado tareas.</p>
+          <div className="text-center py-14 bg-white border rounded-xl shadow-md">
+            <p className="text-gray-600 mb-4">
+              Aún no has creado tareas. ¿Qué esperas?
+            </p>
+            <button
+              onClick={() => router.push("/dashboard/tasks/new")}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow-md"
+            >
+              Crear mi primera tarea
+            </button>
+          </div>
         ) : (
           <div className="space-y-4">
 
             {tasks.slice(0, 3).map((task) => (
               <div
                 key={task.id}
-                className="p-5 bg-white shadow rounded-lg border flex justify-between items-center"
+                className="p-6 bg-white shadow-lg rounded-xl border flex flex-col sm:flex-row sm:justify-between gap-4 hover:shadow-xl transition"
               >
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -119,16 +149,18 @@ export default function DashboardClient() {
 
                   <p className="text-sm text-gray-500 mt-1">{task.category}</p>
 
-                  <div className="text-sm text-gray-600 mt-2 space-y-1">
+                  {/* Información */}
+                  <div className="text-sm text-gray-600 mt-3 space-y-1">
+
                     {/* Ubicación */}
                     <p className="flex items-center gap-2">
-                      <MapPin size={16} className="text-indigo-600 flex-shrink-0" />
+                      <MapPin size={16} className="text-indigo-600" />
                       {task.location}
                     </p>
 
                     {/* Presupuesto */}
                     <p className="flex items-center gap-2">
-                      <Wallet size={16} className="text-indigo-600 flex-shrink-0" />
+                      <Wallet size={16} className="text-indigo-600" />
                       Estimado:
                       <span className="font-semibold"> S/{task.budget}</span>
                     </p>
@@ -137,9 +169,9 @@ export default function DashboardClient() {
 
                 <button
                   onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
-                  className="text-indigo-600 hover:underline font-medium"
+                  className="text-indigo-600 hover:underline font-medium self-start sm:self-center"
                 >
-                  Ver detalles
+                  Ver detalles →
                 </button>
               </div>
             ))}
@@ -147,6 +179,14 @@ export default function DashboardClient() {
           </div>
         )}
       </div>
+
+      {/* BOTÓN FLOTANTE EN MÓVIL */}
+      <button
+        onClick={() => router.push("/dashboard/tasks/new")}
+        className="md:hidden fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 transition"
+      >
+        <Plus size={26} />
+      </button>
     </div>
   );
 }

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-
 import {
   LayoutDashboard,
   Search,
@@ -13,7 +12,9 @@ import {
   Settings,
   UserCircle,
   LogOut,
-  HandshakeIcon  // ⭐ Nuevo icono
+  HandshakeIcon,
+  Menu,
+  X
 } from "lucide-react";
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -21,8 +22,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const router = useRouter();
 
   const [user, setUser] = useState<any>(null);
+  const [open, setOpen] = useState(false); // ⭐ sidebar responsive
 
-  // Cargar usuario desde localStorage
   useEffect(() => {
     const u = localStorage.getItem("user");
     if (u) setUser(JSON.parse(u));
@@ -31,16 +32,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   if (!user) return <p className="p-10 text-gray-600">Cargando...</p>;
 
-  // ⭐ MENU COMPLETO (con Negociaciones)
   const menu = [
     { label: "Dashboard", icon: <LayoutDashboard size={18} />, href: "/student" },
     { label: "Explorar tareas", icon: <Search size={18} />, href: "/student/tasks" },
     { label: "Mis postulaciones", icon: <Send size={18} />, href: "/student/applications" },
     { label: "Mensajes", icon: <MessageSquare size={18} />, href: "/student/messages" },
-
-    // ⭐ NUEVO — Negociaciones
     { label: "Negociaciones", icon: <HandshakeIcon size={18} />, href: "/student/negotiations" },
-
     { label: "Mi perfil", icon: <User size={18} />, href: "/student/profile" },
     { label: "Configuración", icon: <Settings size={18} />, href: "/student/settings" },
   ];
@@ -53,43 +50,46 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   return (
     <div className="flex min-h-screen bg-gray-50">
 
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-white shadow-md p-6 flex flex-col justify-between">
+      {/* BOTÓN MOBILE */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="md:hidden fixed top-4 left-4 z-50 bg-white shadow p-2 rounded-lg"
+      >
+        {open ? <X size={22} /> : <Menu size={22} />}
+      </button>
 
+      {/* SIDEBAR */}
+      <aside
+        className={`
+          w-64 bg-white shadow-md p-6 flex flex-col justify-between
+          fixed md:static h-full z-40 transition-transform
+          ${open ? "translate-x-0" : "-translate-x-72 md:translate-x-0"}
+        `}
+      >
         <div>
-          {/* LOGO */}
           <h1 className="text-2xl font-bold text-indigo-600 mb-6">
             Cachueleando
           </h1>
 
           {/* USER INFO */}
           <div className="flex flex-col items-center mb-8">
-
-            {/* Foto o ícono */}
             {user.photoUrl ? (
-              <img
-                src={user.photoUrl}
-                className="w-20 h-20 rounded-full object-cover mb-2"
-              />
+              <img src={user.photoUrl} className="w-20 h-20 rounded-full object-cover mb-2" />
             ) : (
               <UserCircle className="w-20 h-20 text-gray-400 mb-2" />
             )}
 
-            {/* Nombre */}
             <h2 className="text-lg font-semibold text-gray-900">{user.name}</h2>
-
-            {/* Universidad */}
-            <p className="text-sm text-gray-500">
-              {user.university || "—"}
-            </p>
+            <p className="text-sm text-gray-500">{user.university || "—"}</p>
           </div>
 
-          {/* MENÚ */}
+          {/* MENU */}
           <nav className="space-y-2">
             {menu.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setOpen(false)} // cerrar sidebar en móvil
                 className={`flex items-center gap-3 px-3 py-2 rounded-md transition ${
                   pathname === item.href
                     ? "bg-indigo-100 text-indigo-600 font-medium"
@@ -114,7 +114,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       </aside>
 
       {/* CONTENIDO */}
-      <main className="flex-1 p-10">{children}</main>
+      <main className="flex-1 p-10 mt-16 md:mt-0">{children}</main>
     </div>
   );
 }

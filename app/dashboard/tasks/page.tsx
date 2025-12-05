@@ -10,6 +10,9 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // -------------------------------
+  // 1. Verificar usuario y cargar tareas
+  // -------------------------------
   useEffect(() => {
     const user = localStorage.getItem("user");
 
@@ -38,6 +41,7 @@ export default function TasksPage() {
 
   return (
     <div>
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Mis tareas activas</h1>
 
@@ -49,10 +53,11 @@ export default function TasksPage() {
         </button>
       </div>
 
+      {/* LISTA DE TAREAS */}
       {tasks.length === 0 ? (
         <p className="text-gray-500">Aún no has publicado tareas.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {tasks.map((t: any) => (
             <div
               key={t.id}
@@ -84,13 +89,11 @@ export default function TasksPage() {
 
               {/* BODY */}
               <div className="space-y-2 text-sm text-gray-600">
-                {/* LOCATION */}
                 <p className="flex items-center gap-2">
                   <MapPin size={16} className="text-indigo-600" />
                   {t.location}
                 </p>
 
-                {/* BUDGET */}
                 <p className="flex items-center gap-2">
                   <Wallet size={16} className="text-indigo-600" />
                   Estimado:{" "}

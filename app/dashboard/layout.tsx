@@ -11,6 +11,8 @@ import {
   User,
   Settings,
   UserCircle,
+  Menu,
+  X,
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -18,15 +20,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   const [user, setUser] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // 1. Obtener usuario desde localStorage
+  // Cargar usuario
   useEffect(() => {
     const u = localStorage.getItem("user");
-    if (u) setUser(JSON.parse(u));
-    else router.push("/login"); // si no hay login → redirigir
+    if (!u) return router.push("/login");
+    setUser(JSON.parse(u));
   }, [router]);
 
-  // 2. Bloqueo mientras carga
   if (!user) return <p className="p-10 text-gray-600">Cargando...</p>;
 
   const menu = [
@@ -37,7 +39,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: "Configuración", icon: <Settings size={18} />, href: "/dashboard/settings" },
   ];
 
-  // 3. Cerrar sesión
   const handleLogout = () => {
     localStorage.removeItem("user");
     router.push("/login");
@@ -46,29 +47,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-gray-50">
 
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-white shadow-md p-6 flex flex-col justify-between">
+      {/* ---------- BOTÓN MÓVIL ---------- */}
+      <button
+        className="md:hidden p-4 fixed top-2 left-2 z-50 bg-white rounded-lg shadow"
+        onClick={() => setSidebarOpen(true)}
+      >
+        <Menu size={24} />
+      </button>
+
+      {/* ---------- SIDEBAR MOBILE (SLIDE) ---------- */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed md:static z-50 bg-white shadow-md p-6 flex flex-col justify-between 
+        w-64 h-full transform transition-transform duration-300 
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+      >
+        {/* CLOSE BUTTON MOBILE */}
+        <button
+          className="md:hidden mb-4 ml-auto text-gray-500"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <X size={24} />
+        </button>
+
         <div>
-          {/* LOGO */}
           <h1 className="text-2xl font-bold text-indigo-600 mb-6">Cachueleando</h1>
 
           {/* USER INFO */}
           <div className="flex flex-col items-center mb-8">
-
-            {/* Foto o icono */}
             {user.photoUrl ? (
-              <img
-                src={user.photoUrl}
-                className="w-20 h-20 rounded-full object-cover mb-2"
-              />
+              <img src={user.photoUrl} className="w-20 h-20 rounded-full object-cover mb-2" />
             ) : (
               <UserCircle className="w-20 h-20 text-gray-400 mb-2" />
             )}
 
-            {/* Nombre del usuario */}
             <h2 className="text-lg font-semibold">{user.name}</h2>
-
-            {/* Universidad o NONE */}
             <p className="text-sm text-gray-500">
               {user.university === "NONE" ? "—" : user.university}
             </p>
@@ -80,6 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md transition ${
                   pathname === item.href
                     ? "bg-indigo-100 text-indigo-600 font-medium"
@@ -103,8 +123,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
       </aside>
 
-      {/* CONTENIDO */}
-      <main className="flex-1 p-10">{children}</main>
+      {/* ---------- CONTENIDO ---------- */}
+      <main className="flex-1 p-6 md:p-10">{children}</main>
     </div>
   );
 }

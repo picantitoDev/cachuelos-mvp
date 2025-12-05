@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 export default function MessagesPage() {
   const params = useSearchParams();
@@ -10,12 +11,14 @@ export default function MessagesPage() {
   const withUser = params.get("with");
   const taskId = params.get("task");
 
-  const [user, setUser] = useState(null);
-  const [otherUser, setOtherUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
+  const [otherUser, setOtherUser] = useState<any>(null);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [conversations, setConversations] = useState([]);
-  const [task, setTask] = useState(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [task, setTask] = useState<any>(null);
+
+  const [showChatMobile, setShowChatMobile] = useState(false); // 📱 para mobile view
 
   // 1️⃣ Usuario logueado
   useEffect(() => {
@@ -72,6 +75,9 @@ export default function MessagesPage() {
       );
       const data = await res.json();
       setMessages(data);
+
+      // En móvil → mostrar chat automáticamente
+      setShowChatMobile(true);
     }
 
     loadMessages();
@@ -107,10 +113,15 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="grid grid-cols-3 min-h-[85vh] bg-white rounded-xl shadow">
+    <div className="grid grid-cols-1 md:grid-cols-3 min-h-[85vh] bg-white rounded-xl shadow overflow-hidden">
 
-      {/* LEFT — Conversaciones */}
-      <div className="border-r bg-gray-50 p-4 overflow-y-auto">
+      {/* 📱 MODO LISTA (solo visible cuando NO se está viendo chat en móvil) */}
+      <div
+        className={`
+          border-r bg-gray-50 p-4 overflow-y-auto
+          ${showChatMobile ? "hidden md:block" : "block"}
+        `}
+      >
         <h2 className="font-bold mb-4 text-gray-800 text-lg">Conversaciones</h2>
 
         {conversations.length === 0 && (
@@ -131,9 +142,10 @@ export default function MessagesPage() {
                     ? "bg-indigo-100 border border-indigo-300 shadow-sm"
                     : "hover:bg-gray-200"
                 }`}
-                onClick={() =>
-                  router.push(`/dashboard/messages?with=${c.otherUserId}&task=${c.taskId}`)
-                }
+                onClick={() => {
+                  router.push(`/dashboard/messages?with=${c.otherUserId}&task=${c.taskId}`);
+                  setShowChatMobile(true); // abrir chat en móvil
+                }}
               >
                 <p className="font-semibold">{c.otherUserName}</p>
                 <p className="text-[11px] text-gray-500 truncate">
@@ -145,32 +157,44 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* RIGHT — Chat */}
-      <div className="col-span-2 flex flex-col">
-
+      {/* 💬 CHAT */}
+      <div
+        className={`
+          col-span-2 flex flex-col
+          ${!showChatMobile ? "hidden md:flex" : "flex"}
+        `}
+      >
         {!withUser || !taskId ? (
           <p className="p-10 text-gray-500">Selecciona una conversación</p>
         ) : (
           <>
             {/* HEADER */}
-            <div className="border-b bg-white p-4 shadow-sm">
-              <p className="text-lg font-bold text-gray-900">
-                {otherUser ? otherUser.name : "Cargando..."}
-              </p>
+            <div className="border-b bg-white p-4 shadow-sm flex items-center gap-3">
+              
+              {/* BOTÓN DE RETROCESO (solo móvil) */}
+              <button
+                onClick={() => setShowChatMobile(false)}
+                className="md:hidden p-2 rounded hover:bg-gray-200"
+              >
+                <ArrowLeft className="w-6 h-6 text-gray-700" />
+              </button>
 
-              {task && (
-                <p className="text-sm text-gray-600">
-                  Tarea: <span className="font-semibold">{task.title}</span> ·
-                  <span className="text-indigo-600 font-semibold ml-1">
-                    {task.status}
-                  </span>
+              <div>
+                <p className="text-lg font-bold text-gray-900">
+                  {otherUser ? otherUser.name : "Cargando..."}
                 </p>
-              )}
+
+                {task && (
+                  <p className="text-sm text-gray-600">
+                    Tarea: <span className="font-semibold">{task.title}</span> ·
+                    <span className="text-indigo-600 font-semibold ml-1">{task.status}</span>
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* MENSAJES — FIX DE SCROLL INTERNO */}
+            {/* MENSAJES */}
             <div className="p-6 flex flex-col space-y-4 bg-white h-[60vh] overflow-y-auto">
-
               {messages.length === 0 ? (
                 <p className="text-gray-400 text-sm">Inicia la conversación…</p>
               ) : (
@@ -209,7 +233,6 @@ export default function MessagesPage() {
           </>
         )}
       </div>
-
     </div>
   );
 }
