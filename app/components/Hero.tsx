@@ -7,24 +7,32 @@ export default function Hero() {
   const router = useRouter();
 
   return (
-    <section id="hero" className="w-full py-28 bg-gradient-to-b from-indigo-50 to-white">
-      <div className="max-w-5xl mx-auto px-6 text-center">
+    <section
+      id="hero"
+      className="w-full py-32 bg-gradient-to-b from-indigo-50/60 to-white"
+    >
+      <div className="max-w-6xl mx-auto px-6 text-center">
 
-        <h1 className="text-5xl font-extrabold text-gray-900 leading-tight mb-6">
-          Conecta con <span className="text-indigo-600">estudiantes universitarios</span><br />
-          verificados para tus <span className="text-indigo-600">cachuelos</span>
+        {/* TÍTULO PRINCIPAL */}
+        <h1 className="text-6xl font-black text-gray-900 leading-tight tracking-tight mb-8">
+          Conecta con{" "}
+          <span className="text-indigo-600">estudiantes verificados</span>
+          <br />
+          para resolver tus{" "}
+          <span className="text-indigo-600">cachuelos</span>
         </h1>
 
-        <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-10">
-          Encuentra ayuda para cualquier tarea o gana dinero extra ofreciendo tus habilidades.
-          Fácil, seguro y confiable.
+        {/* SUBTÍTULO */}
+        <p className="text-gray-600 text-xl max-w-3xl mx-auto mb-12 leading-relaxed">
+          Publica lo que necesitas o gana dinero ofreciendo tus habilidades.
+          Una plataforma segura, rápida y confiable para todos.
         </p>
 
         {/* CTA BUTTONS */}
-        <div className="flex justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-5">
           <Button
             size="lg"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 text-lg rounded-xl shadow-md hover:shadow-lg transition"
             onClick={() => router.push("/publicar")}
           >
             Publicar tarea
@@ -33,13 +41,12 @@ export default function Hero() {
           <Button
             size="lg"
             variant="outline"
-            className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-6"
+            className="border-indigo-600 text-indigo-600 hover:bg-indigo-100 px-8 py-6 text-lg rounded-xl transition shadow-sm"
             onClick={() => router.push("/ganar-dinero")}
           >
             Ganar dinero
           </Button>
         </div>
-
       </div>
     </section>
   );
