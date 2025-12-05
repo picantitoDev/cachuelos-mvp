@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-export async function POST(req: Request, context: any) {
-  // 👇 AQUÍ ESTÁ LA CORRECCIÓN IMPORTANTE
+const COMMISSION_RATE = 0.2;
+
+export async function POST(
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   const { id } = await context.params;
   const appId = Number(id);
+
+  if (Number.isNaN(appId)) {
+    return NextResponse.json(
+      { error: "ID de aplicación inválido" },
+      { status: 400 }
+    );
+  }
 
   const app = await prisma.application.findUnique({
     where: { id: appId },
@@ -20,23 +31,19 @@ export async function POST(req: Request, context: any) {
 
   const taskId = app.taskId;
   const studentId = app.studentId;
+  const clientId = app.task.clientId;
+  const budget = app.task.budget;
 
-  // 1) Aceptar esta aplicación
   await prisma.application.update({
     where: { id: appId },
     data: { status: "ACEPTADA" },
   });
 
-  // 2) Rechazar todas las demás
   await prisma.application.updateMany({
-    where: {
-      taskId,
-      id: { not: appId },
-    },
+    where: { taskId, id: { not: appId } },
     data: { status: "RECHAZADA" },
   });
 
-  // 3) Actualizar la tarea
   const updatedTask = await prisma.task.update({
     where: { id: taskId },
     data: {
@@ -45,5 +52,28 @@ export async function POST(req: Request, context: any) {
     },
   });
 
-  return NextResponse.json(updatedTask);
+  let payment = await prisma.payment.findUnique({
+    where: { taskId },
+  });
+
+  if (!payment) {
+    const priceFinal = budget;
+    const commission = priceFinal * COMMISSION_RATE;
+    const totalAmount = priceFinal + commission;
+
+    payment = await prisma.payment.create({
+      data: {
+        method: null,
+        status: "PENDIENTE",
+        priceFinal,
+        commission,
+        totalAmount,
+        taskId,
+        clientId,
+        studentId,
+      },
+    });
+  }
+
+  return NextResponse.json({ task: updatedTask, payment });
 }

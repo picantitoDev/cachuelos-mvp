@@ -20,6 +20,13 @@ enum University {
   UPAO
 }
 
+enum PriceStatus {
+  SIN_PROPUESTA
+  PROPUESTO
+  ACEPTADO
+  RECHAZADO
+}
+
 enum TaskStatus {
   PUBLICADA
   EN_NEGOCIACION
@@ -157,14 +164,18 @@ model Message {
 // PAYMENT
 ////////////////////////////////////////////////////
 
-model Payment {
+model Payment { 
   id             Int            @id @default(autoincrement())
-  method         PaymentMethod
+  method         PaymentMethod?
   status         PaymentStatus  @default(PENDIENTE)
 
   priceFinal     Float
   commission     Float
   totalAmount    Float
+
+  // 🔥 Campos nuevos
+  proposedPrice  Float?
+  priceStatus    PriceStatus    @default(SIN_PROPUESTA)
 
   taskId         Int     @unique
   task           Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)

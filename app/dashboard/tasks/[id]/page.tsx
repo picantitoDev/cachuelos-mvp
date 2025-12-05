@@ -2,30 +2,44 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import {
-  MapPin,
-  Wallet,
-  ArrowLeft,
-  CalendarDays,
-  User,
-} from "lucide-react";
+import { MapPin, Wallet, ArrowLeft, CalendarDays, User } from "lucide-react";
 
 export default function TaskDetailsPage() {
   const router = useRouter();
   const { id } = useParams();
 
   const [task, setTask] = useState<any>(null);
+  const [payment, setPayment] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   // ======================================================
-  // CARGAR TAREA + POSTULANTES
+  // CARGAR TAREA + PAGO
   // ======================================================
   useEffect(() => {
     async function loadTask() {
       try {
+        // 1) Tarea
         const res = await fetch(`/api/tasks/${id}`);
         const data = await res.json();
+
+        if (!res.ok) {
+          console.error(data);
+          setLoading(false);
+          return;
+        }
+
         setTask(data);
+
+        // 2) Payment asociado a la tarea (si existe)
+        try {
+          const payRes = await fetch(`/api/payments/${id}`);
+          if (payRes.ok) {
+            const payData = await payRes.json();
+            setPayment(payData);
+          }
+        } catch (e) {
+          console.warn("No hay payment para esta tarea (todavía).");
+        }
       } catch (err) {
         console.error("ERROR LOADING TASK:", err);
       }
@@ -55,6 +69,16 @@ export default function TaskDetailsPage() {
       const updated = await fetch(`/api/tasks/${id}`).then((r) => r.json());
       setTask(updated);
 
+      // Intentar recargar también el payment (puede haberse creado)
+      try {
+        const payRes = await fetch(`/api/payments/${id}`);
+        if (payRes.ok) {
+          const payData = await payRes.json();
+          setPayment(payData);
+        }
+      } catch (e) {
+        console.warn("No se pudo recargar payment tras seleccionar.");
+      }
     } catch (err) {
       alert("Error al seleccionar estudiante");
     }
@@ -62,7 +86,6 @@ export default function TaskDetailsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-
       {/* REGRESAR */}
       <button
         onClick={() => router.push("/dashboard/tasks")}
@@ -77,7 +100,6 @@ export default function TaskDetailsPage() {
 
       {/* CARD DE LA TAREA */}
       <div className="bg-white shadow rounded-xl border p-6 space-y-6">
-
         {/* CATEGORÍA + ESTADO */}
         <div className="flex justify-between items-center">
           <span className="px-3 py-1 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
@@ -91,7 +113,6 @@ export default function TaskDetailsPage() {
 
         {/* INFO PRINCIPAL */}
         <div className="space-y-3 text-gray-700 text-sm">
-
           <p className="flex items-center gap-2">
             <MapPin size={18} className="text-indigo-500" />
             <span className="font-medium">Ubicación:</span> {task.location}
@@ -119,7 +140,7 @@ export default function TaskDetailsPage() {
       </div>
 
       {/* ======================================================
-         POSTULANTES 
+         POSTULANTES
       ====================================================== */}
       <div className="bg-white shadow rounded-xl border p-6">
         <h3 className="font-semibold text-lg text-gray-900 mb-4">
@@ -172,7 +193,6 @@ export default function TaskDetailsPage() {
 
                   {/* BOTONES */}
                   <div className="flex items-center gap-4 pt-2">
-
                     {/* Ver perfil */}
                     <button
                       className="text-indigo-600 hover:underline text-sm"
@@ -220,6 +240,29 @@ export default function TaskDetailsPage() {
           </div>
         )}
       </div>
+
+      {/* ======================================================
+         BLOQUE DE PAGO (solo cuando el precio ya fue aceptado)
+      ====================================================== */}
+      {payment && payment.priceStatus === "ACEPTADO" && (
+        <div className="bg-white shadow rounded-xl border p-6 mt-6 space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Pago pendiente
+          </h3>
+
+          <p className="text-gray-700 text-sm">
+            El estudiante aceptó el precio acordado. Ahora debes realizar el
+            pago para que pueda iniciar la tarea.
+          </p>
+
+          <button
+            onClick={() => router.push(`/dashboard/payments/${task.id}`)}
+            className="bg-indigo-600 w-full text-white py-3 rounded-xl hover:bg-indigo-700 transition"
+          >
+            Ir a pagar
+          </button>
+        </div>
+      )}
     </div>
   );
 }

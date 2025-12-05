@@ -12,7 +12,8 @@ import {
   User,
   Settings,
   UserCircle,
-  LogOut
+  LogOut,
+  HandshakeIcon  // ⭐ Nuevo icono
 } from "lucide-react";
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -30,11 +31,16 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   if (!user) return <p className="p-10 text-gray-600">Cargando...</p>;
 
+  // ⭐ MENU COMPLETO (con Negociaciones)
   const menu = [
     { label: "Dashboard", icon: <LayoutDashboard size={18} />, href: "/student" },
     { label: "Explorar tareas", icon: <Search size={18} />, href: "/student/tasks" },
     { label: "Mis postulaciones", icon: <Send size={18} />, href: "/student/applications" },
     { label: "Mensajes", icon: <MessageSquare size={18} />, href: "/student/messages" },
+
+    // ⭐ NUEVO — Negociaciones
+    { label: "Negociaciones", icon: <HandshakeIcon size={18} />, href: "/student/negotiations" },
+
     { label: "Mi perfil", icon: <User size={18} />, href: "/student/profile" },
     { label: "Configuración", icon: <Settings size={18} />, href: "/student/settings" },
   ];
