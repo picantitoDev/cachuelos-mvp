@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Briefcase } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -13,13 +13,19 @@ export default function Navbar() {
     <nav className="w-full sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b">
       <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-6">
 
-        {/* LOGO */}
-        <h1
-          className="text-2xl font-bold text-indigo-600 cursor-pointer"
+        {/* LOGO + NOMBRE */}
+        <div
+          className="flex items-center gap-3 cursor-pointer"
           onClick={() => router.push("/")}
         >
-          Cachueleando
-        </h1>
+          {/* Cuadrado con ícono */}
+          <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+            <Briefcase size={22} className="text-white" />
+          </div>
+
+          {/* Nombre de marca */}
+          <h1 className="text-2xl font-bold text-indigo-600">Cachueleando</h1>
+        </div>
 
         {/* MENU CENTRADO */}
         <div className="hidden md:flex flex-1 justify-center">
@@ -64,7 +70,7 @@ export default function Navbar() {
           </Button>
         </div>
 
-        {/* MOBILE MENU BUTTON */}
+        {/* BOTÓN MENÚ MÓVIL */}
         <button className="md:hidden" onClick={() => setOpen(!open)}>
           {open ? <X size={26} /> : <Menu size={26} />}
         </button>

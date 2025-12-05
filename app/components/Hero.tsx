@@ -9,7 +9,7 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className="w-full py-32 bg-gradient-to-b from-indigo-50/60 to-white"
+      className="w-full py-25 bg-gradient-to-b from-indigo-50/60 to-white"
     >
       <div className="max-w-6xl mx-auto px-6 text-center">
 

@@ -18,7 +18,7 @@ export default function VideoPromo() {
   };
 
   return (
-    <div className="w-full flex flex-col items-center py-16">
+    <div className="w-full flex flex-col items-center py-10 px-2">
       <div className="relative w-full max-w-3xl aspect-video mx-auto">
         {/* VIDEO */}
         <video
